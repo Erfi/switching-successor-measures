@@ -18,7 +18,12 @@ surprises. Newest entries at the bottom of each section.
 
 ## Blockers / bugs
 
-(none yet)
+- **B1 (2026-11-18): wandb init crashes with the installed wandb.** `utils/log_utils.py:83` passes
+  `wandb.Settings(start_method='thread')`; `requirements.txt` has `wandb>=0.19.11`, which resolved
+  to wandb 0.31.0, and that rejects the field (`pydantic ValidationError: extra_forbidden`). Every
+  run with `--enable_wandb=1` dies at startup. Smoke tests missed it because they use
+  `--enable_wandb=0`. Stage A rows `A-*-medium-sd0` failed in about 10 s each (hierarchical ones
+  never started). Waiting for Erfan's decision before any fix.
 
 ## Notes
 
