@@ -110,3 +110,5 @@ level adds +10.4 and +13.2 over its base, in line with the paper's +17.
 **Conclusion:** seed 0 looks like an outlier, not a pipeline bug. Caveat: seed 0 is also the only
 run on the workstation (RTX 3090 vs L40S), so seed and machine are confounded; B1's cluster run
 of medium seed 0 resolves this.
+
+**Decision (Erfan, 2026-11-18):** treat Stage A seed 0 as an outlier; Stage A passes; continue with B1.
