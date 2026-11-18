@@ -40,3 +40,38 @@ surprises. Newest entries at the bottom of each section.
   2k-step checkpoint are bit-identical to the base checkpoint, so the frozen modules load and stay
   frozen. Cluster smoke (FB → FB+πh, `testdlc2_gpu-l40s`): pass; L40S visible, no dataset
   download triggered, registry updated from compute nodes, `aftercorr` dependency works.
+
+## Investigation I1 — Stage A FBπS below sanity band (2026-11-18)
+
+Stage A (workstation, medium, seed 0, 50 episodes × 5 tasks, final step):
+
+| Run | Overall | Task 1–5 | Paper (Table 6) | Flag (\|Δ\| > 2σ+5) |
+|---|---|---|---|---|
+| HIQL | 95.6 | 98 / 96 / 96 / 92 / 96 | 93 ± 1 | no |
+| FB | 49.6 | 82 / 64 / 28 / 2 / 72 | 47 ± 1 | no |
+| FBπS−πh | 61.2 | 66 / 92 / 42 / 28 / 78 | 70 ± 4 | no |
+| FB+πh | 29.2 | 0 / 0 / 36 / 52 / 58 | 50 ± 12 | no |
+| **FBπS** | **58.4** | 66 / 84 / 32 / 42 / 68 | 87 ± 6 | **yes** |
+
+Wall time on the 3090: base runs 52–58 min each, FB+πh 36 min, FBπS 21 min (500k steps, incl. 2 evals).
+
+Checks (no code changed):
+1. **Training curves (FBπS high actor):** no divergence or NaN. The high actor plateaus within
+   the first 5k steps: train MSE to target latent 0.76 → 0.71, val MSE 0.74 → 0.75 (slowly
+   rising), log-prob flat at about −164, advantage saturation 0.2–0.5%, all samples active.
+   FB+πh: advantages are very large (mean ~4·10³, std ~2·10⁴), 5–6% of weights saturate the
+   clip at `high_alpha=1e-3`.
+2. **Frozen modules:** final checkpoints of FB+πh and FBπS hold actor, F and B bit-identical to
+   their base runs' `params_1000000.pkl`; `frozen_path` = exact base run dir, `restore_epoch`=1M.
+3. **Hyperparameters vs paper (Tables 3–5, App. C):** all FBπS / FBπS−πh / FB / FB+πh values
+   match. Only difference: `orthonorm_coeff` = 1e-3 in the `fbpiswitch.py` config versus 1e-4 in
+   Table 4, but the coefficient is unused when only the high actor trains (base used 1e-4).
+   Evaluation also matches the paper: a fresh subgoal latent every step, deterministic
+   (temperature 0).
+4. **Per task:** FBπS beats its base on tasks 2 and 4 (+16, +14) and loses on 1, 3, 5
+   (−0, −10, −10); net −3. In the paper the high level adds +17 over the base (70 → 87).
+   FB+πh drops to 0 on tasks 1–2 where FB alone gets 82/64.
+5. **Versions:** not tested. Paper states no JAX/library versions; ours are much newer (D5).
+
+Open: one seed only. The base FBπS−πh is itself 9 points under the paper mean, and the
+high level adds nothing on top of it here.
