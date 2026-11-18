@@ -33,3 +33,4 @@
 - 3090: packing gives nothing; run Stage A one run at a time.
 - L40S: 2 runs per GPU gives 1.29× total throughput, 3 gives no more. Excludes evaluation time
   (two 5×50-episode evals per run), which Stage A will measure.
+- **Decision (Erfan, 2026-11-18): no packing.** One run per GPU on both machines.
