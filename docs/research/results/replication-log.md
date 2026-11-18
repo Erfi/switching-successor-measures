@@ -15,6 +15,7 @@ surprises. Newest entries at the bottom of each section.
 | D6 | 2026-11-18 | `--eval_interval=<train_steps>` (eval only at step 1 and at the end), `--eval_episodes=50`, `--video_episodes=0`. | Spec Step 4. |
 | D7 | 2026-11-18 | Giant hierarchical runs (FB+πh, FBπS) **without** `--agent.discount=0.995`, as in `hyperparameters.sh`, although the paper says γ=0.995 for Giant. | Spec Step 4: replicate the script as published. |
 | D8 | 2026-11-18 | GPU-packing benchmark runs (`scripts/bench_packing.py`, `exp_logs_bench/`) are not in the registry. | Timing-only throwaway runs, not results. |
+| D9 | 2026-11-18 | **wandb pinned to 0.19.11** (`scripts/constraints.txt`; `requirements.txt`'s own lower bound). Side effect: protobuf 7.36.2 → 6.33.6. Env freezes updated, still identical on both machines. | Fixes blocker B1 without touching `utils/`. Erfan's choice. |
 
 ## Blockers / bugs
 
@@ -23,7 +24,7 @@ surprises. Newest entries at the bottom of each section.
   to wandb 0.31.0, and that rejects the field (`pydantic ValidationError: extra_forbidden`). Every
   run with `--enable_wandb=1` dies at startup. Smoke tests missed it because they use
   `--enable_wandb=0`. Stage A rows `A-*-medium-sd0` failed in about 10 s each (hierarchical ones
-  never started). Waiting for Erfan's decision before any fix.
+  never started). **Resolved** by D9 (pin wandb==0.19.11, Erfan's choice). Checked with a 500-step FB run with wandb on (offline mode). Stage A relaunched as `A-*-r1`.
 
 ## Notes
 

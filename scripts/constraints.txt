@@ -1,0 +1,3 @@
+# Pins on top of requirements.txt (see docs/research/results/replication-log.md).
+# Install: uv pip install -r requirements.txt -c scripts/constraints.txt
+wandb==0.19.11

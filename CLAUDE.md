@@ -36,7 +36,8 @@ Agents: FB, FB+πh (`fb_hierarchical.py`), FB π-Switch (`fbpiswitch_nonhierarch
   - workstation: `~/Dev/switching-successor-measures`
   - cluster: `ssh kislogin1`, repo at `~/dev_hfb/switching-successor-measures` (on NFS `/work`).
 - Python env: uv, not conda. `.venv/` (Python 3.11) in the repo root on both machines, created with
-  `uv venv --python 3.11 .venv && uv pip install -r requirements.txt`. Pinned snapshot of the
+  `uv venv --python 3.11 .venv && uv pip install -r requirements.txt -c scripts/constraints.txt`
+  (the constraints pin wandb==0.19.11; newer wandb breaks upstream `setup_wandb`). Pinned snapshot of the
   installed versions: `docs/research/results/env-freeze-*.txt` (identical on both machines).
 - Datasets (pass `--dataset_dir`; `scripts/matrix.py` picks it per backend):
   - workstation: `~/.ogbench/data`
