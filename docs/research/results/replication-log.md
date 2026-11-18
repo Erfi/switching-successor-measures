@@ -93,3 +93,20 @@ within noise — FBπS 57.6 vs 58.4, FBπS−πh 60.4 vs 61.2, FB+πh 31.2 vs 29
   adds about +3–4 points here, not the paper's +17. FBπS never exceeds 74 at any checkpoint
   (paper 87 ± 6).
 - FB+πh is flat around 30 for the whole stage, below FB's 49.6.
+
+### I1 (b) — extra seeds on the cluster (B1 rows, L40S, commit 11fb1f8)
+
+| Run | Seed | Overall | Task 1–5 | Wall time |
+|---|---|---|---|---|
+| FBπS−πh | 1 | 74.0 | 82 / 90 / 76 / 38 / 84 | 70 min |
+| FBπS−πh | 2 | 69.6 | 52 / 92 / 72 / 56 / 76 | 63 min |
+| FBπS | 1 | 84.4 | 76 / 92 / 92 / 74 / 88 | 22 min |
+| FBπS | 2 | 82.8 | 72 / 90 / 86 / 78 / 88 | 21 min |
+
+Seeds 0–2 (seed 0 = Stage A on the workstation): FBπS−πh 61.2 / 74.0 / 69.6 → mean 68.3 ± 6.5
+(paper 70 ± 4); FBπS 58.4 / 84.4 / 82.8 → 75.2 ± 14.6 (paper 87 ± 6). On seeds 1–2 the high
+level adds +10.4 and +13.2 over its base, in line with the paper's +17.
+
+**Conclusion:** seed 0 looks like an outlier, not a pipeline bug. Caveat: seed 0 is also the only
+run on the workstation (RTX 3090 vs L40S), so seed and machine are confounded; B1's cluster run
+of medium seed 0 resolves this.

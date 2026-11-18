@@ -22,6 +22,7 @@ Agents: FB, FB+πh (`fb_hierarchical.py`), FB π-Switch (`fbpiswitch_nonhierarch
   seed, run dir, and git commit. Launch with `scripts/launch.py`; it registers rows and executes
   them through `scripts/run_one.py`. Run definitions live in `scripts/matrix.py`. The registry is
   shared through git: commit and push it after each stage, and pull before launching elsewhere.
+  Always `git pull --rebase` before committing on either machine (a stale clone's push gets rejected).
 - Hierarchical stages (`fb_hierarchical.py`, `fbpiswitch.py`) need
   `--agent.frozen_path=<exact base run dir>`. Use the same seed as the base run.
 - Before any long run: do a 2k-step smoke test with `--enable_wandb=0 --video_episodes=0`.
