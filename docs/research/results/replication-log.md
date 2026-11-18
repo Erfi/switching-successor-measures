@@ -75,3 +75,21 @@ Checks (no code changed):
 
 Open: one seed only. The base FBπS−πh is itself 9 points under the paper mean, and the
 high level adds nothing on top of it here.
+
+### I1 (a) — learning curves from checkpoints (`scripts/eval_checkpoint.py`, 50 episodes × 5 tasks)
+
+Eval-only check (spec Step 6): final-checkpoint re-evaluation matches each run's own `eval.csv`
+within noise — FBπS 57.6 vs 58.4, FBπS−πh 60.4 vs 61.2, FB+πh 31.2 vs 29.2.
+
+| Step (k) | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 1000 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| FBπS−πh | 46.4 | 34.4 | 77.6 | 69.6 | 60.0 | 58.4 | 73.2 | 62.0 | 54.4 | 60.4 |
+| FBπS (500k on top of FBπS−πh@1M) | 64.8 | 63.2 | 67.2 | 73.6 | 57.6 | | | | | |
+| FB+πh (500k on top of FB@1M) | 33.2 | 29.6 | 29.6 | 27.6 | 31.2 | | | | | |
+
+- Checkpoint-to-checkpoint swings (FBπS−πh 54–78 after 300k) are far larger than episode
+  sampling noise (≈3 points SE for 250 episodes): the final-step number of a single run is noisy.
+- FBπS averages 65.3 over its 5 checkpoints vs 61.7 for FBπS−πh over 600k–1M: the high level
+  adds about +3–4 points here, not the paper's +17. FBπS never exceeds 74 at any checkpoint
+  (paper 87 ± 6).
+- FB+πh is flat around 30 for the whole stage, below FB's 49.6.
