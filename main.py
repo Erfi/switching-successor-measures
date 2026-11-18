@@ -25,8 +25,10 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_integer('enable_wandb', 1, 'Whether to use wandb.')
 flags.DEFINE_string('wandb_run_group', 'experiments', 'Run group.')
+flags.DEFINE_string('wandb_project', 'FB pi-Switch', 'Wandb project name.')
 flags.DEFINE_integer('seed', 0, 'Random seed.')
 flags.DEFINE_string('env_name', 'ogbench-antmaze-large-navigate-v0', 'Environment (dataset) name.')
+flags.DEFINE_string('dataset_dir', '~/.ogbench/data', 'Directory holding the OGBench datasets.')
 flags.DEFINE_string('save_dir', 'exp_logs', 'Save directory.')
 flags.DEFINE_string('restore_path', None, 'Restore path.')
 flags.DEFINE_integer('restore_epoch', None, 'Restore epoch.')
@@ -54,7 +56,7 @@ def main(_):
     if FLAGS.enable_wandb:
         setup_wandb(
             wandb_output_dir=FLAGS.save_dir,
-            project='FB pi-Switch', group=FLAGS.wandb_run_group, name=exp_name,
+            project=FLAGS.wandb_project, group=FLAGS.wandb_run_group, name=exp_name,
         )
     flag_dict = get_flag_dict()
     with open(os.path.join(FLAGS.save_dir, 'flags.json'), 'w') as f:
@@ -62,7 +64,7 @@ def main(_):
         
     config = FLAGS.agent
     # Set up environment and dataset.
-    eval_env, train_dataset, val_dataset = make_env_and_datasets(FLAGS.env_name, frame_stack=config['frame_stack'], add_info=True)
+    eval_env, train_dataset, val_dataset = make_env_and_datasets(FLAGS.env_name, frame_stack=config['frame_stack'], add_info=True, dataset_dir=FLAGS.dataset_dir)
     eval_env.unwrapped._add_noise_to_goal = False
 
     if config.get('num_zero_shot_samples') is not None:

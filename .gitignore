@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+exp_logs*/
+slurm_logs/
+wandb/
+scripts/registry.csv.lock
+scripts/.registry.*.tmp
