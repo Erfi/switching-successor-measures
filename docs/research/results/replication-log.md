@@ -112,3 +112,39 @@ run on the workstation (RTX 3090 vs L40S), so seed and machine are confounded; B
 of medium seed 0 resolves this.
 
 **Decision (Erfan, 2026-11-18):** treat Stage A seed 0 as an outlier; Stage A passes; continue with B1.
+
+## Stage B1 results (2026-11-18, cluster L40S, 50 episodes × 5 tasks, final step)
+
+All 24 rows `done`, no errors in the SLURM logs. Medium seeds 1–2 of FBπS−πh / FBπS are the I1 (b)
+runs. Std is over seeds (ddof=1); paper values are Table 6 (5 seeds).
+
+| Env | Method | Seeds 0 / 1 / 2 | Ours | Paper | Δ | Flag (\|Δ\| > 2σ+5) |
+|---|---|---|---|---|---|---|
+| medium | FB | 44.4 / 54.0 / 58.8 | 52.4 ± 7.3 | 47 ± 1 | +5.4 | no (thr 7) |
+| medium | FBπS−πh | 60.0 / 74.0 / 69.6 | 67.9 ± 7.2 | 70 ± 4 | −2.1 | no |
+| medium | FB+πh | 58.0 / 65.2 / 53.6 | 58.9 ± 5.9 | 50 ± 12 | +8.9 | no |
+| medium | FBπS | 82.4 / 84.4 / 82.8 | 83.2 ± 1.1 | 87 ± 6 | −3.8 | no |
+| large | FB | 29.2 / 21.2 / 19.6 | 23.3 ± 5.1 | 21 ± 5 | +2.3 | no |
+| large | FBπS−πh | 24.4 / 21.6 / 22.0 | 22.7 ± 1.5 | 37 ± 7 | **−14.3** | no (thr 19) |
+| large | FB+πh | 28.8 / 12.0 / 9.2 | 16.7 ± 10.6 | 20 ± 5 | −3.3 | no |
+| large | FBπS | 36.4 / 54.0 / 42.0 | 44.1 ± 9.0 | 66 ± 9 | **−21.9** | no (thr 23) |
+
+No cell is flagged, but on Large both FBπS-family numbers are well below the paper (−14 and
+−22, each just under the threshold). FBπS−πh on Large is tight (±1.5), so its gap looks systematic,
+not seed noise. Per task, all Large FB-family runs score 0–10 % on task 2 (FBπS 28–38 %).
+`hyperparameters.sh` uses the same FBπS / FBπS−πh flags on Large as on Medium.
+
+Qualitative claims (spec acceptance criteria):
+1. FBπS > FBπS−πh on Medium and Large: **holds** (+15.3 medium, +21.4 large; paper +17, +29).
+2. FB+πh ≈ FB: **holds** (+6.5 medium, −6.6 large).
+3. FBπS−πh > FB: **holds on Medium** (+15.5), **does not hold on Large** (22.7 vs 23.3; paper 37 vs 21).
+4. FBπS within ~1 std of HIQL: **not testable yet**, as HIQL has only Stage A seed 0 on Medium (95.6).
+   Against paper HIQL (93 ± 1, 73 ± 6) it would fail on both (83.2, 44.1).
+
+Seed vs machine (I1 caveat): cluster medium seed 0 gives FBπS−πh 60.0 (workstation 61.2) and
+FBπS **82.4** (workstation 58.4). So seed 0 is not a bad seed. The workstation FBπS result came from
+a different base checkpoint (same seed, same base score, different weights) on a different GPU;
+one sample cannot tell which mattered. FB 44.4 vs 49.6 and FB+πh 58.0 vs 29.2 across machines.
+
+Wall time (L40S): FB 48–55 min, FBπS−πh 63–71 min, FB+πh 26–31 min, FBπS 21–24 min.
+B1 total ≈ 17 GPU-h (spec estimate 45).
