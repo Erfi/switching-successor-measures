@@ -19,5 +19,17 @@
   - `alldlc2_gpu-l40s` QOS caps: 100 GPUs, 800 CPUs per user.
 - **Used:** `nrdlc2_gpu-l40s` (Erfan's choice).
 
-## Throughput / packing
-(to be filled from `scripts/bench_packing.py`)
+## Throughput / packing (`scripts/bench_packing.py`, FB, medium, 20k steps, training only)
+
+| Machine | Concurrent runs | Steps/s per run | Total steps/s | vs 1 run | h per 1M steps per run |
+|---|---|---|---|---|---|
+| RTX 3090 (shared with another process) | 1 | 316.7 | 316.7 | 1.00× | 0.88 |
+| | 2 | 151.5 | 303.0 | 0.96× | 1.83 |
+| | 3 | 100.8 | 302.5 | 0.96× | 2.75 |
+| L40S (`testdlc2_gpu-l40s`) | 1 | 486.0 | 486.0 | 1.00× | 0.57 |
+| | 2 | 312.8 | 625.7 | 1.29× | 0.89 |
+| | 3 | 207.7 | 623.1 | 1.28× | 1.34 |
+
+- 3090: packing gives nothing; run Stage A one run at a time.
+- L40S: 2 runs per GPU gives 1.29× total throughput, 3 gives no more. Excludes evaluation time
+  (two 5×50-episode evals per run), which Stage A will measure.

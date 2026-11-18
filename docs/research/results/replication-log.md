@@ -25,3 +25,12 @@ surprises. Newest entries at the bottom of each section.
 - `restore_agent` (`utils/flax_utils.py`) globs its path, but `load_agent_from_frozen` joins
   `frozen_path` with `flags.json` without globbing, so `frozen_path` must be the exact run dir.
   `scripts/run_one.py` fills it with the absolute run dir of the base run (same stage, env, seed).
+- `train.csv` is not valid CSV for FB-family agents: `CsvLogger` (`utils/log_utils.py`) writes
+  values with `str()`, and `training/actor/std` is a matrix, so its numpy repr spans many lines.
+  Not patched (upstream code). `scripts/logs.py:read_rows` rejoins lines inside `[...]`; use it
+  for every read of `train.csv` / `eval.csv`.
+- Smoke tests (2026-11-18): all 7 agents pass on the workstation (medium, sd0, 2k steps; no NaN,
+  eval.csv and `params_2000.pkl` written). For FB+πh and FBπS, the actor, F and B params in the
+  2k-step checkpoint are bit-identical to the base checkpoint, so the frozen modules load and stay
+  frozen. Cluster smoke (FB → FB+πh, `testdlc2_gpu-l40s`): pass; L40S visible, no dataset
+  download triggered, registry updated from compute nodes, `aftercorr` dependency works.
