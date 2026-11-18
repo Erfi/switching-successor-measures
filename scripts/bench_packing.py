@@ -7,7 +7,6 @@ Throughput comes from `time/epoch_time` (seconds per step) in each run's train.c
 first logged interval (JIT compile + the step-1 evaluation).
 """
 import argparse
-import csv
 import glob
 import os
 import shlex
@@ -16,14 +15,13 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from scripts import matrix  # noqa: E402
+from scripts import logs, matrix  # noqa: E402
 
 REPO_ROOT = matrix.REPO_ROOT
 
 
 def steps_per_second(run_dir):
-    with open(os.path.join(run_dir, 'train.csv')) as f:
-        times = [float(r['time/epoch_time']) for r in csv.DictReader(f)][1:]
+    times = [float(r['time/epoch_time']) for r in logs.read_rows(os.path.join(run_dir, 'train.csv'))][1:]
     return 1.0 / statistics.median(times)
 
 

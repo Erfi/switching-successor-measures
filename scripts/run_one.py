@@ -6,9 +6,7 @@ Usage (from the repo root, inside the project venv):
 Used by both launcher backends. Exits non-zero if the run failed, so SLURM dependencies work.
 """
 import argparse
-import csv
 import glob
-import math
 import os
 import shlex
 import signal
@@ -18,7 +16,7 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from scripts import matrix, registry  # noqa: E402
+from scripts import logs, matrix, registry  # noqa: E402
 
 REPO_ROOT = registry.REPO_ROOT
 
@@ -73,16 +71,14 @@ def check_outputs(run_dir, train_steps):
     eval_csv = os.path.join(run_dir, 'eval.csv')
     final_success = ''
     if os.path.exists(train_csv):
-        with open(train_csv) as f:
-            for r in csv.DictReader(f):
-                if any(_is_nan(v) for v in r.values()):
-                    problems.append(f'NaN in train.csv at step {r.get("step")}')
-                    break
+        for r in logs.read_rows(train_csv):
+            if any(logs.has_nan(v) for v in r.values()):
+                problems.append(f'NaN in train.csv at step {r.get("step")}')
+                break
     else:
         problems.append('no train.csv')
     if os.path.exists(eval_csv):
-        with open(eval_csv) as f:
-            rows = list(csv.DictReader(f))
+        rows = logs.read_rows(eval_csv)
         if rows and 'evaluation/overall_success' in rows[-1]:
             final_success = f'{100 * float(rows[-1]["evaluation/overall_success"]):.1f}'
     else:
@@ -90,13 +86,6 @@ def check_outputs(run_dir, train_steps):
     if not os.path.exists(os.path.join(run_dir, f'params_{train_steps}.pkl')):
         problems.append(f'no params_{train_steps}.pkl')
     return not problems, final_success, '; '.join(problems)
-
-
-def _is_nan(v):
-    try:
-        return math.isnan(float(v))
-    except (TypeError, ValueError):
-        return False
 
 
 def main():
