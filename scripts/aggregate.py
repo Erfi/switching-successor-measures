@@ -50,6 +50,27 @@ PAPER_TABLE6 = {
     'fbpis_nonh': {'medium': (70, 4), 'large': (37, 7), 'giant': (1, 1), 'teleport': (29, 4)},
 }
 
+# Paper Table 7 (general rewards, `regions`): per-task undiscounted return mean ± std over 5 seeds,
+# and IQM [95% CI] (normalized over ICVF, One-Step FB and the 4 FB-family methods).
+PAPER_TABLE7 = {
+    'large': {
+        'icvf': {'tasks': [(282, 43), (360, 179), (1183, 262), (518, 206), (109, 44)], 'iqm': (0.48, 0.42, 0.57)},
+        'onestep_fb': {'tasks': [(207, 56), (-171, 34), (192, 232), (184, 352), (-79, 96)], 'iqm': (0.09, 0.03, 0.15)},
+        'fb': {'tasks': [(938, 308), (4, 281), (115, 107), (906, 32), (36, 67)], 'iqm': (0.37, 0.28, 0.50)},
+        'fb_h': {'tasks': [(523, 95), (-45, 75), (58, 75), (916, 41), (-5, 11)], 'iqm': (0.24, 0.21, 0.27)},
+        'fbpis': {'tasks': [(756, 185), (456, 305), (697, 354), (664, 97), (479, 89)], 'iqm': (0.67, 0.56, 0.74)},
+        'fbpis_nonh': {'tasks': [(451, 99), (131, 107), (209, 133), (602, 223), (337, 238)], 'iqm': (0.35, 0.30, 0.43)},
+    },
+    'giant': {
+        'icvf': {'tasks': [(-19, 28), (266, 50), (185, 76), (192, 65), (-40, 80)], 'iqm': (0.43, 0.39, 0.47)},
+        'onestep_fb': {'tasks': [(36, 30), (30, 30), (173, 107), (-176, 152), (-292, 138)], 'iqm': (0.21, 0.17, 0.28)},
+        'fb': {'tasks': [(1, 55), (158, 128), (292, 175), (138, 158), (-391, 283)], 'iqm': (0.33, 0.23, 0.43)},
+        'fb_h': {'tasks': [(2, 12), (169, 117), (292, 170), (-3, 134), (-369, 210)], 'iqm': (0.30, 0.24, 0.37)},
+        'fbpis': {'tasks': [(101, 87), (292, 92), (470, 268), (321, 61), (257, 305)], 'iqm': (0.65, 0.54, 0.74)},
+        'fbpis_nonh': {'tasks': [(125, 167), (326, 60), (437, 187), (362, 99), (42, 150)], 'iqm': (0.63, 0.54, 0.73)},
+    },
+}
+
 # Spec acceptance criteria. (claim, kind, method A, method B, envs)
 CLAIMS = [
     ('1. FBπS > FBπS−πh (hierarchy helps)', 'greater', 'fbpis', 'fbpis_nonh', ['medium', 'large']),
@@ -219,19 +240,103 @@ def claims_section(runs):
     return '\n'.join(out)
 
 
-def general_reward_section(rows):
-    have = [r for r in rows if r['status'] == 'done' and r['env'] in ('large', 'giant')
-            and r['method'] not in ('hiql',) and r['stage'] in ('B1', 'B2', 'C_opt', 'D')]
-    regions = 0
-    for r in have:
-        d = local_run_dir(r['run_dir'])
-        if d and glob.glob(os.path.join(d, 'eval_only_*_regions_sd*.csv')):
-            regions += 1
-    return '\n'.join([
-        '### 2. General rewards (Table 7)', '',
-        f'Not computed yet: {regions} run(s) have `eval_only_*_regions_*.csv` files. Needs '
-        '`scripts/eval_checkpoint.py --complex_task_name=regions` on the Large and Giant checkpoints '
-        '(Giant = Stage D, not run), then IQM with stratified-bootstrap CIs (App. C.5).'])
+def regions_returns(row, eval_seed=0):
+    """(step, [mean undiscounted return per task]) from the latest eval_only_<step>_regions_sd<seed>.csv."""
+    d = local_run_dir(row['run_dir'])
+    if d is None:
+        return None
+    found = []
+    for path in glob.glob(os.path.join(d, f'eval_only_*_regions_sd{eval_seed}.csv')):
+        m = re.fullmatch(rf'eval_only_(\d+)_regions_sd{eval_seed}\.csv', os.path.basename(path))
+        if m:
+            found.append((int(m.group(1)), path))
+    if not found:
+        return None
+    step, path = max(found)
+    last = logs.read_rows(path)[-1]
+    tasks, i = [], 1
+    while f'evaluation/{i}_total_return' in last:
+        tasks.append(float(last[f'evaluation/{i}_total_return']))
+        i += 1
+    return step, tasks
+
+
+def iqm(values):
+    return stats.trim_mean(np.asarray(values, dtype=float).ravel(), 0.25)
+
+
+def regions_iqm(returns, n_boot=2000, seed=0):
+    """App. C.5: per-task min-max normalization over all methods and seeds, IQM over pooled
+    (task, seed) values, 95% CI from a bootstrap that resamples seeds within each task.
+
+    returns: {method: array [n_seeds, n_tasks]} -> {method: (iqm, lo, hi)}, plus (mins, maxs).
+    """
+    pooled = np.concatenate(list(returns.values()), axis=0)
+    lo_t, hi_t = pooled.min(axis=0), pooled.max(axis=0)
+    span = np.where(hi_t > lo_t, hi_t - lo_t, 1.0)
+    rng = np.random.default_rng(seed)
+    out = {}
+    for m, r in returns.items():
+        norm = (r - lo_t) / span
+        n_seeds, n_tasks = norm.shape
+        boots = np.empty(n_boot)
+        for b in range(n_boot):
+            idx = rng.integers(0, n_seeds, size=(n_seeds, n_tasks))  # independent per task
+            boots[b] = iqm(np.take_along_axis(norm, idx, axis=0))
+        out[m] = (iqm(norm), np.percentile(boots, 2.5), np.percentile(boots, 97.5))
+    return out, (lo_t, hi_t)
+
+
+def general_reward_section(runs):
+    out = ['### 2. General rewards (`regions`, Table 7)', '',
+           'Score: undiscounted return over 1000-step episodes (`total_return`), mean over 50 episodes per '
+           'task and seed, final checkpoint, eval seed 0. IQM as in App. C.5: per-task min–max '
+           'normalization over all methods and seeds shown here, IQM over the pooled 5 tasks × seeds, '
+           '95% CI from 2000 bootstrap samples that resample seeds within each task (the paper does '
+           'not state its sample count or checkpoint). The normalization set differs from the paper\'s '
+           '(no ICVF / One-Step FB here), so compare IQM **rankings**, and raw returns directly.', '']
+    any_env = False
+    for env in ['large', 'giant']:
+        data, steps = {}, set()
+        for m in METHOD_ORDER:
+            if m == 'hiql' or (m, env) not in runs:
+                continue
+            per_seed = [regions_returns(runs[(m, env)][s]) for s in sorted(runs[(m, env)])]
+            per_seed = [x for x in per_seed if x is not None]
+            if len(per_seed) >= 2:
+                data[m] = np.array([t for _, t in per_seed])
+                steps.update(s for s, _ in per_seed)
+        if len(data) < 2:
+            continue
+        any_env = True
+        methods = list(data)
+        n_tasks = min(d.shape[1] for d in data.values())
+        data = {m: d[:, :n_tasks] for m, d in data.items()}
+        scores, _ = regions_iqm(data)
+        paper = PAPER_TABLE7.get(env, {})
+        header = ['Task'] + [f'{METHOD_LABEL[m]} (n={len(data[m])})' for m in methods]
+        trows = []
+        for t in range(n_tasks):
+            cells = []
+            for m in methods:
+                mu, sd = mean_std(data[m][:, t])
+                pv = paper.get(m, {}).get('tasks')
+                cells.append(f'{mu:.0f} ± {sd:.0f}' + (f' ({pv[t][0]} ± {pv[t][1]})' if pv else ''))
+            trows.append([t + 1] + cells)
+        trows.append(['**IQM [95% CI]**'] + [
+            f'**{scores[m][0]:.2f}** [{scores[m][1]:.2f}, {scores[m][2]:.2f}]'
+            + (f' ({paper[m]["iqm"][0]:.2f} [{paper[m]["iqm"][1]:.2f}, {paper[m]["iqm"][2]:.2f}])'
+               if m in paper else '') for m in methods])
+        out += [f'**{env.capitalize()}** — ours mean ± std over seeds (paper in parentheses); checkpoints at '
+                f'step(s) {", ".join(f"{s // 1000}k" for s in sorted(steps))}.', '', md_table(header, trows), '']
+        rank_ours = sorted(methods, key=lambda m: -scores[m][0])
+        rank_paper = sorted([m for m in methods if m in paper], key=lambda m: -paper[m]['iqm'][0])
+        out += [f'IQM ranking, ours: {" > ".join(METHOD_LABEL[m] for m in rank_ours)}. '
+                f'Paper (same methods): {" > ".join(METHOD_LABEL[m] for m in rank_paper)}.', '']
+    if not any_env:
+        out.append('Not computed yet: no run has `eval_only_*_regions_sd0.csv` files. Run '
+                   '`scripts/eval_checkpoint.py --complex_task_name=regions` on the Large / Giant checkpoints.')
+    return '\n'.join(out).rstrip()
 
 
 def learning_curves_section(rows):
@@ -303,7 +408,7 @@ def build_auto_block(stages):
              f'_Generated {datetime.now().strftime("%Y-%m-%d %H:%M")} from `scripts/registry.csv` '
              f'({len(rows)} rows)._', '',
              goal_reaching_section(runs, stages), '', claims_section(runs), '',
-             general_reward_section(rows), '', learning_curves_section(rows), '', inventory_section(rows), '']
+             general_reward_section(runs), '', learning_curves_section(rows), '', inventory_section(rows), '']
     if missing:
         parts += [f'Warning: no local eval.csv for {", ".join(missing)} (rsync from the cluster?).', '']
     parts.append(AUTO_END)

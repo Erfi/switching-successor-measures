@@ -230,3 +230,18 @@ B2 ≈ 19 GPU-h; B1 + B2 ≈ 36 GPU-h.
 discrepancy text outside them is hand-written). Its claim rules are stricter than the wording
 used above: claim 2 on Medium (FB+πh +9.4 over FB, larger std 6.1) now counts as **fails** under
 "|Δ| ≤ larger std", where the B2 entry said "holds".
+
+## Table 7 — general rewards on Large (2026-11-19)
+
+`scripts/eval_checkpoint.py --complex_task_name=regions --eval_episodes=50 --seed=0` on the final
+checkpoints of the 20 Large FB-family runs (B1 + B2; base 1M, hierarchical 500k). Cluster job
+30546578, ad-hoc sbatch `slurm_logs/hfb-regions-large.sbatch` (eval-only, not registry rows).
+Metric and IQM follow the paper's App. C.5 (undiscounted return; per-task min–max normalization;
+IQM over pooled tasks × seeds; seed bootstrap within task). The paper does not state the bootstrap
+sample count or which checkpoint it evaluated: we use 2000 and the final checkpoint.
+
+Result (full table in `replication.md`): IQM ranking FBπS 0.36 > FB 0.34 > FBπS−πh 0.23 >
+FB+πh 0.19, the same order as the paper (0.67 / 0.37 / 0.35 / 0.24). FB and FB+πh per-task
+returns match the paper; FBπS and FBπS−πh are below it on most tasks, so FBπS and FB overlap
+here, where the paper has FBπS clearly ahead. ICVF / One-Step FB are not in our normalization
+set, so absolute IQMs are not comparable.
