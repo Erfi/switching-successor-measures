@@ -173,3 +173,53 @@ checkpoints match each run's `eval.csv` within noise (e.g. FBπS 36.8 / 54.4 / 4
 - So on Large our gap is a late-training decline of the FBπS−πh representation, not a failure of
   the high-level stage. Whether the paper's base runs also decline (and their 37 is just a
   better-behaved run set) cannot be told from the paper.
+
+## I2 — seed-0 cross test: base checkpoint vs machine (2026-11-19)
+
+FBπS medium seed 0 trained on top of the **workstation** FBπS−πh base (`A-fbpis_nonh-medium-sd0-r1`,
+61.2 %), once on the cluster (byte copy of the checkpoint, md5-checked) and once again on the
+workstation. Registry stages `I2a` / `I2b`; the base rows there point at existing checkpoints
+(not retrained). Run group `xtest_I2{a,b}_fbpis_medium`, so they stay out of the main tables.
+
+| Run | Base | Machine | Overall | Task 1–5 |
+|---|---|---|---|---|
+| A-fbpis-medium-sd0-r1 | workstation base | 3090 | 58.4 | 66 / 84 / 32 / 42 / 68 |
+| I2b-fbpis-medium-sd0 | workstation base | 3090 | 62.0 | 62 / 90 / 44 / 48 / 66 |
+| I2a-fbpis-medium-sd0 | workstation base | L40S | 62.0 | 60 / 90 / 40 / 48 / 72 |
+| B1-fbpis-medium-sd0 | cluster base (60.0 %) | L40S | 82.4 | 94 / 86 / 60 / 82 / 90 |
+
+**The base checkpoint decides it, not the machine.** The workstation base gives 58–62 on either GPU.
+The cluster base, with the same seed and the same flat success (60.0 vs 61.2), gives 82.4. A
+repeat on the same machine and base moves by only 3.6 points. So the FBπS−πh success rate does
+not predict how well a high level can use that base. Combined with I1 (c), the quality of the
+1M base checkpoint is the main source of FBπS variance.
+
+## Stage B2 results — 5 seeds (2026-11-19, cluster L40S)
+
+All 26 rows `done`, no errors. Medium/Large × seeds 0–4: seeds 0–2 from B1, 3–4 from B2; HIQL
+seeds 0–4 all from B2 (the Stage A workstation HIQL run, 95.6, is not included).
+
+| Env | Method | Seeds 0 / 1 / 2 / 3 / 4 | Ours | Paper | Δ | Flag (\|Δ\| > 2σ+5) |
+|---|---|---|---|---|---|---|
+| medium | HIQL | 96.4 / 96.4 / 95.2 / 95.6 / 92.4 | 95.2 ± 1.6 | 93 ± 1 | +2.2 | no (thr 7) |
+| medium | FB | 44.4 / 54.0 / 58.8 / 48.0 / 45.6 | 50.2 ± 6.1 | 47 ± 1 | +3.2 | no (thr 7) |
+| medium | FBπS−πh | 60.0 / 74.0 / 69.6 / 70.8 / 77.2 | 70.3 ± 6.5 | 70 ± 4 | +0.3 | no |
+| medium | FB+πh | 58.0 / 65.2 / 53.6 / 64.0 / 57.2 | 59.6 ± 4.9 | 50 ± 12 | +9.6 | no |
+| medium | FBπS | 82.4 / 84.4 / 82.8 / 86.8 / 73.6 | 82.0 ± 5.0 | 87 ± 6 | −5.0 | no |
+| large | HIQL | 75.2 / 75.6 / 63.2 / 67.2 / 74.0 | 71.0 ± 5.5 | 73 ± 6 | −2.0 | no |
+| large | FB | 29.2 / 21.2 / 19.6 / 21.2 / 24.0 | 23.0 ± 3.8 | 21 ± 5 | +2.0 | no |
+| large | FBπS−πh | 24.4 / 21.6 / 22.0 / 28.0 / 37.2 | 26.6 ± 6.4 | 37 ± 7 | −10.4 | no (thr 19) |
+| large | FB+πh | 28.8 / 12.0 / 9.2 / 23.2 / 12.8 | 17.2 ± 8.4 | 20 ± 5 | −2.8 | no |
+| large | FBπS | 36.4 / 54.0 / 42.0 / 56.4 / 47.2 | 47.2 ± 8.3 | 66 ± 9 | **−18.8** | no (thr 23) |
+
+Qualitative claims at 5 seeds:
+1. FBπS > FBπS−πh: **holds** (+11.7 medium, +20.6 large; paper +17, +29).
+2. FB+πh ≈ FB: **holds** (+9.4 medium, −5.8 large; paper +3, −1).
+3. FBπS−πh > FB: **holds on Medium** (+20.1); **marginal on Large** (+3.6, within one std of
+   either; paper +16).
+4. FBπS within ~1 std of HIQL: **does not hold** — Medium 82.0 ± 5.0 vs 95.2 ± 1.6 (−13),
+   Large 47.2 ± 8.3 vs 71.0 ± 5.5 (−24). In the paper the gaps are −6 and −7. HIQL itself
+   replicates closely; the gap comes from FBπS being lower, mostly on Large (see I1 (c)).
+
+Wall time (L40S): HIQL 47–50 min, FB 46–55, FBπS−πh 62–71, FB+πh 24–31, FBπS 21–24.
+B2 ≈ 19 GPU-h; B1 + B2 ≈ 36 GPU-h.
