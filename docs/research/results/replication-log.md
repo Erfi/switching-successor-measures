@@ -223,3 +223,10 @@ Qualitative claims at 5 seeds:
 
 Wall time (L40S): HIQL 47–50 min, FB 46–55, FBπS−πh 62–71, FB+πh 24–31, FBπS 21–24.
 B2 ≈ 19 GPU-h; B1 + B2 ≈ 36 GPU-h.
+
+## Aggregation (2026-11-19)
+
+`scripts/aggregate.py` writes `replication.md` (tables between AUTO markers; the summary and
+discrepancy text outside them is hand-written). Its claim rules are stricter than the wording
+used above: claim 2 on Medium (FB+πh +9.4 over FB, larger std 6.1) now counts as **fails** under
+"|Δ| ≤ larger std", where the B2 entry said "holds".
