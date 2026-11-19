@@ -148,3 +148,28 @@ one sample cannot tell which mattered. FB 44.4 vs 49.6 and FB+πh 58.0 vs 29.2 a
 
 Wall time (L40S): FB 48–55 min, FBπS−πh 63–71 min, FB+πh 26–31 min, FBπS 21–24 min.
 B1 total ≈ 17 GPU-h (spec estimate 45).
+
+### I1 (c) — Large learning curves from B1 checkpoints (2026-11-19)
+
+`scripts/eval_checkpoint.py`, 50 episodes × 5 tasks, eval seed 0, cluster job 30546379 (ad-hoc
+sbatch `slurm_logs/hfb-curves-large.sbatch`, not a registry row: eval-only, no training). Final
+checkpoints match each run's `eval.csv` within noise (e.g. FBπS 36.8 / 54.4 / 44.4 vs 36.4 / 54.0 / 42.0).
+
+| Step (k) | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 1000 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| FBπS−πh sd0 | 20.8 | 18.4 | 36.4 | 23.2 | 14.0 | 11.2 | 17.2 | 26.4 | 17.2 | 23.2 |
+| FBπS−πh sd1 | 8.4 | 25.2 | 26.4 | 51.2 | 40.8 | 36.4 | 41.6 | 26.8 | 17.2 | 24.4 |
+| FBπS−πh sd2 | 15.2 | 12.4 | 26.8 | 28.4 | 22.4 | 26.8 | 17.6 | 14.8 | 15.6 | 20.0 |
+| **FBπS−πh mean** | 14.8 | 18.7 | 29.9 | **34.3** | 25.7 | 24.8 | 25.5 | 22.7 | 16.7 | 22.5 |
+| FBπS sd0 | 32.4 | 30.4 | 39.2 | 28.8 | 36.8 | | | | | |
+| FBπS sd1 | 55.2 | 53.2 | 47.6 | 54.4 | 54.4 | | | | | |
+| FBπS sd2 | 42.4 | 38.8 | 41.6 | 42.0 | 44.4 | | | | | |
+| **FBπS mean** | 43.3 | 40.8 | 42.8 | 41.7 | 45.2 | | | | | |
+
+- FBπS−πh on Large peaks at 300–400k (mean 34.3 at 400k, near the paper's 37 ± 7) and then
+  declines to about 22 by 1M. Single checkpoints swing by 10–25 points.
+- FBπS on Large is flat from 100k on (41–45): the high level converges fast, and its level is set
+  by the base it sits on (the 1M base, which is past the base's peak). No later decay.
+- So on Large our gap is a late-training decline of the FBπS−πh representation, not a failure of
+  the high-level stage. Whether the paper's base runs also decline (and their 37 is just a
+  better-behaved run set) cannot be told from the paper.
